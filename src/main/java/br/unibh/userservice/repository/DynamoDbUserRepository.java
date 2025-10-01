@@ -1,12 +1,13 @@
 package br.unibh.userservice.repository;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
-import br.unibh.userservice.model.User;
+import br.unibh.userservice.entity.User;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
@@ -17,7 +18,6 @@ public class DynamoDbUserRepository implements UserRepository {
 
     private final DynamoDbTable<User> userTable;
 
-    // Injeção de dependências via construtor
     public DynamoDbUserRepository(DynamoDbEnhancedClient enhancedClient,
                                 @Value("${aws.dynamodb.tableName}") String tableName) {
         this.userTable = enhancedClient.table(tableName, TableSchema.fromBean(User.class));
@@ -25,11 +25,10 @@ public class DynamoDbUserRepository implements UserRepository {
 
     @Override
     public void save(User user) {
-        // Lógica para definir data de criação ou atualização
         if (user.getCreatedAt() == null) {
-            user.setCreatedAt(Instant.now());
+            user.setCreatedAt(LocalDateTime.now());
         }
-        user.setUpdatedAt(Instant.now());
+        user.setUpdatedAt(LocalDateTime.now());
         userTable.putItem(user);
     }
 
@@ -43,5 +42,10 @@ public class DynamoDbUserRepository implements UserRepository {
     public Optional<User> deleteById(String id) {
         Key key = Key.builder().partitionValue(id).build();
         return Optional.ofNullable(userTable.deleteItem(key));
+    }
+
+    @Override
+    public List<User> findAll() {
+        return userTable.scan().items().stream().toList();
     }
 }

@@ -5,6 +5,7 @@ import java.net.URI;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -21,30 +22,31 @@ public class DynamoDbConfig {
 
     // Bean para o ambiente de produção
     @Bean
+    @Primary
     @Profile("prod")
     public DynamoDbClient dynamoDbClientProd() {
         return DynamoDbClient.builder()
                 .region(Region.of(awsRegion))
-                // O SDK busca credenciais automaticamente do ambiente (IAM Role, etc)
                 .build();
     }
-
     // Bean para o ambiente local e de teste
     @Bean
+    @Primary
     @Profile({"local", "test"})
     public DynamoDbClient dynamoDbClientLocal(@Value("${aws.dynamodb.endpoint}") String endpoint) {
         return DynamoDbClient.builder()
                 .endpointOverride(URI.create(endpoint))
                 .region(Region.of(awsRegion))
                 .credentialsProvider(
-                    StaticCredentialsProvider.create(AwsBasicCredentials.create("dummy", "dummy"))
+                        StaticCredentialsProvider.create(AwsBasicCredentials.create("dummy", "dummy"))
                 )
                 .build();
     }
-    
+
     // Bean do Enhanced Client que será injetado no repositório
     // Ele depende de um DynamoDbClient (local ou prod) que o Spring irá fornecer.
     @Bean
+    @Primary
     public DynamoDbEnhancedClient dynamoDbEnhancedClient(DynamoDbClient dynamoDbClient) {
         return DynamoDbEnhancedClient.builder()
                 .dynamoDbClient(dynamoDbClient)

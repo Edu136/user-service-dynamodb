@@ -1,6 +1,7 @@
 package br.unibh.userservice.repository;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.junit.jupiter.api.AfterAll;
@@ -16,8 +17,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-import br.unibh.userservice.model.User;
-import br.unibh.userservice.model.UserStatus;
+import br.unibh.userservice.entity.User;
+import br.unibh.userservice.entity.UserState;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
@@ -26,21 +27,21 @@ import software.amazon.awssdk.services.dynamodb.model.DeleteTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput;
 import software.amazon.awssdk.services.dynamodb.model.ResourceInUseException;
 
-@SpringBootTest // Carrega o contexto completo do Spring Boot
+@SpringBootTest
 @ActiveProfiles("test") // Ativa o perfil 'test', lendo application-test.properties
-@TestInstance(TestInstance.Lifecycle.PER_CLASS) // Permite métodos não estáticos para @BeforeAll
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class DynamoDbUserRepositoryTest {
 
-    @Autowired // Spring injeta o repositório que já está configurado
+    @Autowired
     private UserRepository userRepository;
 
-    @Autowired // Precisamos do client para criar/deletar a tabela de teste
+    @Autowired
     private DynamoDbClient dynamoDbClient;
 
     @Autowired
     private DynamoDbEnhancedClient enhancedClient;
 
-    @Value("${aws.dynamodb.tableName}") // Pega o nome da tabela do application-test.properties
+    @Value("${aws.dynamodb.tableName}")
     private String testTableName;
 
     @BeforeAll
@@ -69,8 +70,8 @@ class DynamoDbUserRepositoryTest {
         newUser.setId("user-123");
         newUser.setUsername("johndoe");
         newUser.setEmail("john.doe@test.com");
-        newUser.setPasswordHash("hashed_password_example_123"); // Alterar para ByCrypt
-        newUser.setStatus(UserStatus.ACTIVE);
+        newUser.setPasswordHash("hashed_password_example_123");
+        newUser.setStatus(UserState.ACTIVE);
 
         // Act
         userRepository.save(newUser);
@@ -96,21 +97,49 @@ class DynamoDbUserRepositoryTest {
         user.setUsername("janedoe");
         user.setEmail("jane.doe@test.com");
         user.setPasswordHash("another_hash_456");
-        user.setStatus(UserStatus.INACTIVE);
+        user.setStatus(UserState.INACTIVE);
 
         userRepository.save(user);
-        Instant firstUpdate = userRepository.findById("user-456").get().getUpdatedAt();
+        LocalDateTime firstUpdate = userRepository.findById("user-456").get().getUpdatedAt();
 
-        Thread.sleep(10); // Pequena pausa para garantir que o timestamp mude
+        Thread.sleep(10);
 
         // Act
         user.setUsername("janedoe_updated");
         userRepository.save(user);
-        Instant secondUpdate = userRepository.findById("user-456").get().getUpdatedAt();
+        LocalDateTime secondUpdate = userRepository.findById("user-456").get().getUpdatedAt();
 
         // Assert
         assertNotNull(firstUpdate);
         assertNotNull(secondUpdate);
         assertTrue(secondUpdate.isAfter(firstUpdate), "A data de atualização deveria ser mais recente");
+    }
+
+
+    @Test
+    @DisplayName("Deve mostrar todos os usuários salvos")
+    void shouldFindAllUsers() {
+        // Arrange
+        User user1 = new User();
+        user1.setId("user-789");
+        user1.setUsername("alice");
+        user1.setEmail("alice.doe@test.com");
+        user1.setPasswordHash("hash_alice_789");
+        user1.setStatus(UserState.ACTIVE);
+        userRepository.save(user1);
+        User user2 = new User();
+        user2.setId("user-101");
+        user2.setUsername("bob");
+        user2.setEmail("bob.doe@test.com");
+        user2.setPasswordHash("hash_bob_101");
+        user2.setStatus(UserState.INACTIVE);
+        userRepository.save(user2);
+
+        // Act
+        var allUsers = userRepository.findAll();
+
+        // Assert
+        assertNotNull(allUsers);
+        assertTrue(allUsers.size() >= 2, "Deveria haver pelo menos dois usuários");
     }
 }

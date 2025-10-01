@@ -1,8 +1,9 @@
 package br.unibh.userservice.repository;
 
+import java.util.List;
 import java.util.Optional;
 
-import br.unibh.userservice.model.User;
+import br.unibh.userservice.entity.User;
 
 /**
  * Interface que define as operações de persistência para a entidade User.
@@ -32,4 +33,6 @@ public interface UserRepository {
      * @return um Optional contendo o usuário que foi deletado, ou Optional.empty() se não foi encontrado.
      */
     Optional<User> deleteById(String id);
+
+    List<User> findAll();
 }
