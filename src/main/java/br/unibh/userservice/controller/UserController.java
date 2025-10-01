@@ -1,7 +1,6 @@
 package br.unibh.userservice.controller;
 
-import br.unibh.userservice.dto.CreateUserRequestDTO;
-import br.unibh.userservice.dto.UserResponseDTO;
+import br.unibh.userservice.dto.*;
 import br.unibh.userservice.entity.User;
 import br.unibh.userservice.service.UserQueryService;
 import br.unibh.userservice.service.UserService;
@@ -30,7 +29,7 @@ public class UserController {
     @PostMapping
     public ResponseEntity<UserResponseDTO> createUser(@Valid @RequestBody CreateUserRequestDTO request) {
         User novoUser = userService.createUser(request);
-        UserResponseDTO responseDTO = userQueryService.createUser(novoUser);
+        UserResponseDTO responseDTO = userQueryService.toUserResponseDTO(novoUser);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
 
@@ -38,5 +37,38 @@ public class UserController {
     public ResponseEntity<Void> deleteUsersById(@PathVariable String id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/deactivate")
+    public ResponseEntity<Void> deactivateUser(@PathVariable String id) {
+        userService.deactivateUser(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/activate")
+    public ResponseEntity<Void> activateUser(@PathVariable String id) {
+        userService.activateUser(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/username")
+    public ResponseEntity<UserResponseDTO> updateUsername(@PathVariable String id, @Valid @RequestBody UpdateUsernameDTO request) {
+        User updatedUser = userService.updateUsername(id, request);
+        UserResponseDTO responseDTO = userQueryService.toUserResponseDTO(updatedUser);
+        return ResponseEntity.ok(responseDTO);
+    }
+
+    @PatchMapping("/{id}/email")
+    public ResponseEntity<UserResponseDTO> updateUserEmail(@PathVariable String id,@Valid @RequestBody UpdateEmailDTO request) {
+        User updatedUser = userService.updateEmail(id, request);
+        UserResponseDTO responseDTO = userQueryService.toUserResponseDTO(updatedUser);
+        return ResponseEntity.ok(responseDTO);
+    }
+
+    @PatchMapping("/{id}/password")
+    public ResponseEntity<UserResponseDTO> updateUserPassword(@PathVariable String id,@Valid @RequestBody UpdatePasswordDTO request) {
+        User updatedUser = userService.updatePassword(id, request);
+        UserResponseDTO responseDTO = userQueryService.toUserResponseDTO(updatedUser);
+        return ResponseEntity.ok(responseDTO);
     }
 }

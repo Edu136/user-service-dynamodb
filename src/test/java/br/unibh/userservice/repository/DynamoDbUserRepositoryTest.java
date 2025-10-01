@@ -142,4 +142,25 @@ class DynamoDbUserRepositoryTest {
         assertNotNull(allUsers);
         assertTrue(allUsers.size() >= 2, "Deveria haver pelo menos dois usuários");
     }
+
+    @Test
+    @DisplayName("Deve alterar o status do usuário")
+    void shouldChangeUserStatus() {
+        // Arrange
+        User user = new User();
+        user.setId("user-202");
+        user.setUsername("charlie");
+        user.setEmail("charlie@teste.com");
+        user.setPasswordHash("hash_charlie_202");
+        user.setStatus(UserState.ACTIVE);
+        userRepository.save(user);
+
+        // Act
+        user.setStatus(UserState.INACTIVE);
+        userRepository.save(user);
+        User updatedUser = userRepository.findById("user-202").get();
+
+        // Assert
+        assertEquals(UserState.INACTIVE, updatedUser.getStatus());
+    }
 }

@@ -20,7 +20,7 @@ public class UserQueryService {
         return userRepository.findAll();
     }
 
-    public UserResponseDTO createUser (User user) {
+    public UserResponseDTO toUserResponseDTO(User user) {
        return new UserResponseDTO(
                user.getId(),
                user.getUsername(),

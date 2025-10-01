@@ -16,7 +16,7 @@ public interface UserRepository {
      *
      * @param user O objeto User a ser salvo.
      */
-    void save(User user);
+    User save(User user);
 
     /**
      * Busca um usuário pelo seu ID (chave de partição).

@@ -24,12 +24,13 @@ public class DynamoDbUserRepository implements UserRepository {
     }
 
     @Override
-    public void save(User user) {
+    public User save(User user) {
         if (user.getCreatedAt() == null) {
             user.setCreatedAt(LocalDateTime.now());
         }
         user.setUpdatedAt(LocalDateTime.now());
         userTable.putItem(user);
+        return user;
     }
 
     @Override
