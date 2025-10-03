@@ -2,5 +2,6 @@ package br.unibh.userservice.entity;
 
 public enum UserState {
     ACTIVE,
-    INACTIVE
+    INACTIVE,
+    BLOCKED
 }

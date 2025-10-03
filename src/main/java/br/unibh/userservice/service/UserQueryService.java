@@ -6,6 +6,7 @@ import br.unibh.userservice.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserQueryService {
@@ -28,5 +29,13 @@ public class UserQueryService {
                user.getStatus() ,
                user.getCreatedAt(),
                user.getUpdatedAt());
+    }
+
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    public Optional<User> findByUsername(String username) {
+        return userRepository.findByUsername(username);
     }
 }

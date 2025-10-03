@@ -35,4 +35,14 @@ public interface UserRepository {
     Optional<User> deleteById(String id);
 
     List<User> findAll();
+
+    Optional<User> findByUsername(String id);
+    Optional<User> findByEmail(String email);
+
+    boolean existsByEmail(String login);
+
+    boolean existsByUsername(String username);
+
+
+
 }

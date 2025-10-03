@@ -49,4 +49,30 @@ public class DynamoDbUserRepository implements UserRepository {
     public List<User> findAll() {
         return userTable.scan().items().stream().toList();
     }
+
+    @Override
+    public boolean existsByEmail(String email) {
+        return userTable.scan().items().stream()
+                .anyMatch(user -> user.getEmail().equals(email));
+    }
+
+    @Override
+    public boolean existsByUsername(String username) {
+        return userTable.scan().items().stream()
+                .anyMatch(user -> user.getUsername().equals(username));
+    }
+
+    @Override
+    public Optional<User> findByUsername(String username) {
+        return userTable.scan().items().stream()
+                .filter(user -> user.getUsername().equals(username))
+                .findFirst();
+    }
+
+    @Override
+    public Optional<User> findByEmail(String email) {
+        return userTable.scan().items().stream()
+                .filter(user -> user.getEmail().equals(email))
+                .findFirst();
+    }
 }

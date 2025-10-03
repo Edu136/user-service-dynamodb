@@ -5,7 +5,6 @@ import br.unibh.userservice.entity.User;
 import br.unibh.userservice.service.UserQueryService;
 import br.unibh.userservice.service.UserService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,13 +23,6 @@ public class UserController {
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
         return ResponseEntity.ok(userQueryService.GetAllUsersResponse());
-    }
-
-    @PostMapping
-    public ResponseEntity<UserResponseDTO> createUser(@Valid @RequestBody CreateUserRequestDTO request) {
-        User novoUser = userService.createUser(request);
-        UserResponseDTO responseDTO = userQueryService.toUserResponseDTO(novoUser);
-        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
 
     @DeleteMapping("/{id}")
@@ -68,6 +60,13 @@ public class UserController {
     @PatchMapping("/{id}/password")
     public ResponseEntity<UserResponseDTO> updateUserPassword(@PathVariable String id,@Valid @RequestBody UpdatePasswordDTO request) {
         User updatedUser = userService.updatePassword(id, request);
+        UserResponseDTO responseDTO = userQueryService.toUserResponseDTO(updatedUser);
+        return ResponseEntity.ok(responseDTO);
+    }
+
+    @PatchMapping("/{id}/role")
+    public ResponseEntity<UserResponseDTO> updateUserRole(@PathVariable String id,@Valid @RequestBody UpdateRoleDTO request) {
+        User updatedUser = userService.updateRole(id, request);
         UserResponseDTO responseDTO = userQueryService.toUserResponseDTO(updatedUser);
         return ResponseEntity.ok(responseDTO);
     }

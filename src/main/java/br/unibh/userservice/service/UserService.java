@@ -1,34 +1,34 @@
 package br.unibh.userservice.service;
 
-import br.unibh.userservice.dto.CreateUserRequestDTO;
-import br.unibh.userservice.dto.UpdateEmailDTO;
-import br.unibh.userservice.dto.UpdatePasswordDTO;
-import br.unibh.userservice.dto.UpdateUsernameDTO;
+import br.unibh.userservice.dto.*;
 import br.unibh.userservice.entity.User;
+import br.unibh.userservice.entity.UserRole;
 import br.unibh.userservice.entity.UserState;
 import br.unibh.userservice.repository.UserRepository;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
 
 @Service
-public class UserService {
+public class UserService  {
 
     private final UserRepository userRepository;
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
-    public User createUser(CreateUserRequestDTO request) {
+    public User createUser(CreateUserRequestDTO request ) {
         User novoUsuario = new User();
         novoUsuario.setId(java.util.UUID.randomUUID().toString());
         novoUsuario.setUsername(request.username());
         novoUsuario.setEmail(request.email());
-        novoUsuario.setPasswordHash(request.password());
+        novoUsuario.setPassword(request.password());
         novoUsuario.setStatus(UserState.ACTIVE);
         novoUsuario.setCreatedAt(LocalDateTime.now());
         novoUsuario.setUpdatedAt(LocalDateTime.now());
+        novoUsuario.setRole(UserRole.USER);
         return userRepository.save(novoUsuario);
     }
 
@@ -55,7 +55,7 @@ public class UserService {
         User user = findUserOrThrow(id);
         user.setUsername(request.username());
         user.setEmail(request.email());
-        user.setPasswordHash(request.password());
+        user.setPassword(request.password());
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
         return user;
@@ -79,10 +79,39 @@ public class UserService {
 
     public User updatePassword(String id, UpdatePasswordDTO request) {
         User user = findUserOrThrow(id);
-        user.setPasswordHash(request.password());
+        user.setPassword(request.password());
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
         return user;
+    }
+
+    public User updateRole(String id, UpdateRoleDTO request) {
+        User user = findUserOrThrow(id);
+        user.setRole(request.role());
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+        return user;
+    }
+
+    public CreateUserRequestDTO TrataDadosRegisterUserDTO(CreateUserRequestDTO request) {
+        String encryptedPassword = new BCryptPasswordEncoder().encode(request.password());
+        String username = request.username().trim();
+        String email = request.email().trim().toLowerCase();
+        return new CreateUserRequestDTO(username, email, encryptedPassword);
+    }
+
+
+    public ValidationResultDTO ValidationResultDTO(String email, String username) {
+        if(userRepository.existsByEmail(email) && userRepository.existsByUsername(username)) {
+            return new ValidationResultDTO(false, "Email e Username já cadastrados.");
+        }
+        if(userRepository.existsByEmail(email)) {
+            return new ValidationResultDTO(false, "Email já cadastrado.");
+        }
+        if(userRepository.existsByUsername(username)) {
+            return new ValidationResultDTO(false, "Username já cadastrado.");
+        }
+        return new ValidationResultDTO(true , "OK.");
     }
 
     private User findUserOrThrow(String id) {

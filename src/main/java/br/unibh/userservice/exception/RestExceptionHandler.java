@@ -2,6 +2,7 @@ package br.unibh.userservice.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -63,4 +64,16 @@ public class RestExceptionHandler {
                 .status(HttpStatus.METHOD_NOT_ALLOWED)
                 .body(errorBody);
     }
+
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleUsernameNotFound(UsernameNotFoundException ex) {
+        Map<String, Object> errorBody = new HashMap<>();
+        errorBody.put("status", HttpStatus.NOT_FOUND.value());
+        errorBody.put("error", "User Not Found");
+        errorBody.put("message", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(errorBody);
+    }
+
 }

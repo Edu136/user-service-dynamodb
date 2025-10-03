@@ -1,6 +1,5 @@
 package br.unibh.userservice.repository;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -28,7 +27,7 @@ import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput;
 import software.amazon.awssdk.services.dynamodb.model.ResourceInUseException;
 
 @SpringBootTest
-@ActiveProfiles("test") // Ativa o perfil 'test', lendo application-test.properties
+@ActiveProfiles("prod") // Ativa o perfil 'test', lendo application-test.properties
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class DynamoDbUserRepositoryTest {
 
@@ -70,7 +69,7 @@ class DynamoDbUserRepositoryTest {
         newUser.setId("user-123");
         newUser.setUsername("johndoe");
         newUser.setEmail("john.doe@test.com");
-        newUser.setPasswordHash("hashed_password_example_123");
+        newUser.setPassword("hashed_password_example_123");
         newUser.setStatus(UserState.ACTIVE);
 
         // Act
@@ -96,7 +95,7 @@ class DynamoDbUserRepositoryTest {
         user.setId("user-456");
         user.setUsername("janedoe");
         user.setEmail("jane.doe@test.com");
-        user.setPasswordHash("another_hash_456");
+        user.setPassword("another_hash_456");
         user.setStatus(UserState.INACTIVE);
 
         userRepository.save(user);
@@ -124,14 +123,14 @@ class DynamoDbUserRepositoryTest {
         user1.setId("user-789");
         user1.setUsername("alice");
         user1.setEmail("alice.doe@test.com");
-        user1.setPasswordHash("hash_alice_789");
+        user1.setPassword("hash_alice_789");
         user1.setStatus(UserState.ACTIVE);
         userRepository.save(user1);
         User user2 = new User();
         user2.setId("user-101");
         user2.setUsername("bob");
         user2.setEmail("bob.doe@test.com");
-        user2.setPasswordHash("hash_bob_101");
+        user2.setPassword("hash_bob_101");
         user2.setStatus(UserState.INACTIVE);
         userRepository.save(user2);
 
@@ -151,7 +150,7 @@ class DynamoDbUserRepositoryTest {
         user.setId("user-202");
         user.setUsername("charlie");
         user.setEmail("charlie@teste.com");
-        user.setPasswordHash("hash_charlie_202");
+        user.setPassword("hash_charlie_202");
         user.setStatus(UserState.ACTIVE);
         userRepository.save(user);
 
