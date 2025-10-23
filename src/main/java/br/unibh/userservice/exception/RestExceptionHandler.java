@@ -75,5 +75,4 @@ public class RestExceptionHandler {
                 .status(HttpStatus.NOT_FOUND)
                 .body(errorBody);
     }
-
 }

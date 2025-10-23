@@ -20,15 +20,15 @@ public class SecurityConfig{
         this.securityFilterChain = securityFilterChain;
     }
 
-
     @Bean
     public SecurityFilterChain securityFilterChain (HttpSecurity httpSecurity) throws Exception {
         return httpSecurity
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/users/**").hasRole("ADMIN")
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/users/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilterChain, UsernamePasswordAuthenticationFilter.class)

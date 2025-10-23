@@ -36,7 +36,7 @@ public interface UserRepository {
 
     List<User> findAll();
 
-    Optional<User> findByUsername(String id);
+    Optional<User> findByUsername(String username);
     Optional<User> findByEmail(String email);
 
     boolean existsByEmail(String login);
