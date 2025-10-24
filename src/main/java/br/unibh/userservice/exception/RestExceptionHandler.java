@@ -1,7 +1,9 @@
 package br.unibh.userservice.exception;
 
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -75,4 +77,28 @@ public class RestExceptionHandler {
                 .status(HttpStatus.NOT_FOUND)
                 .body(errorBody);
     }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String,String>> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        Throwable cause = ex.getCause();
+
+        if (cause instanceof InvalidFormatException invalidEx) {
+            Map<String, String> errorBody = new HashMap<>();
+            String fieldName = invalidEx.getPath().isEmpty() ? "unknown" : invalidEx.getPath().get(0).getFieldName();
+
+            errorBody.put("error", "Valor inválido para o campo: " + fieldName);
+            errorBody.put("invalidValue", invalidEx.getValue().toString());
+            errorBody.put("acceptedValues", invalidEx.getTargetType().isEnum() ?
+                    String.join(", ", java.util.Arrays.stream(invalidEx.getTargetType().getEnumConstants())
+                            .map(Object::toString)
+                            .toArray(String[]::new)) : "N/A");
+
+            return new ResponseEntity<>(errorBody, HttpStatus.BAD_REQUEST);
+        }
+
+        Map<String, String> genericError = new HashMap<>();
+        genericError.put("error", "Request mal formado: " + ex.getMessage());
+        return new ResponseEntity<>(genericError, HttpStatus.BAD_REQUEST);
+    }
+
 }

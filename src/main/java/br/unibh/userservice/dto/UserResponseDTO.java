@@ -9,6 +9,5 @@ public record UserResponseDTO (
         String username,
         String email,
         UserState status,
-        LocalDateTime createdAt,
         LocalDateTime updatedAt
 ){}

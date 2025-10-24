@@ -12,12 +12,13 @@ import java.util.Optional;
 public class UserQueryService {
 
     private final UserRepository userRepository;
+
     public UserQueryService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
 
-    public List<User> GetAllUsersResponse () {
+    public List<User> getAllUsers () {
         return userRepository.findAll();
     }
 
@@ -27,7 +28,6 @@ public class UserQueryService {
                user.getUsername(),
                user.getEmail(),
                user.getStatus() ,
-               user.getCreatedAt(),
                user.getUpdatedAt());
     }
 
