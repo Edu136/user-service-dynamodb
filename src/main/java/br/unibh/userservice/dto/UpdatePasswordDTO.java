@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotNull;
 
 public record UpdatePasswordDTO(
         @NotNull(message = "Password é obrigatório.")
-        String password
+        String newPassword,
+        @NotNull(message = "Old password é obrigatório.")
+        String oldPassword
 ){
 }

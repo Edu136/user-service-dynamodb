@@ -8,8 +8,6 @@ import br.unibh.userservice.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -52,12 +50,12 @@ public class AuthenticationController {
     @PostMapping("/register")
     @Operation(summary = "Registra um novo usuário" , description = "Recebe os dados do novo usuário, valida e cria uma nova conta de usuário.")
     public ResponseEntity<?> createUser(@Valid @RequestBody CreateUserRequestDTO request) {
-        CreateUserRequestDTO trataDados =  userService.TrataDadosRegisterUserDTO(request);
-        ValidationResultDTO validado = userService.ValidationResultDTO(trataDados.email(), trataDados.username());
+        CreateUserRequestDTO dadosRegisterUserDTO =  userService.trataDadosRegisterUserDTO(request);
+        ValidationResultDTO validado = userService.validationResultDTO(dadosRegisterUserDTO.email(), dadosRegisterUserDTO.username());
         if(!validado.valid()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponseDTO(validado.message()));
         }
-        User novoUser = userService.createUser(trataDados);
+        User novoUser = userService.createUser(dadosRegisterUserDTO);
         UserResponseDTO responseDTO = userQueryService.toUserResponseDTO(novoUser);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }

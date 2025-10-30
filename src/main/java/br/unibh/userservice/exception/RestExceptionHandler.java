@@ -48,13 +48,6 @@ public class RestExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(RuntimeException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Map<String, String> handleUserNotFound(RuntimeException ex) {
-        Map<String, String> errorMap = new HashMap<>();
-        errorMap.put("error", ex.getMessage());
-        return errorMap;
-    }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<Map<String, Object>> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
@@ -99,6 +92,47 @@ public class RestExceptionHandler {
         Map<String, String> genericError = new HashMap<>();
         genericError.put("error", "Request mal formado: " + ex.getMessage());
         return new ResponseEntity<>(genericError, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler({UserExceptions.InvalidOldPasswordException.class,
+                       UserExceptions.InvalidNewPasswordException.class})
+    public ResponseEntity<Map<String,String>> handlePasswordChangeExceptions(RuntimeException ex) {
+        Map<String, String> errorBody = new HashMap<>();
+        errorBody.put("error", "Erro ao alterar senha");
+        errorBody.put("message", ex.getMessage());
+        return new ResponseEntity<>(errorBody, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler({UserExceptions.UserNotFoundException.class,
+                        UserExceptions.UserLoginNotFoundException.class})
+    public ResponseEntity<Map<String,String>> handleUserNotFound(RuntimeException ex) {
+        Map<String, String> errorBody = new HashMap<>();
+        errorBody.put("error", ex.getMessage());
+        return new ResponseEntity<>(errorBody, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler({UserExceptions.UserStateException.class,
+            UserExceptions.UserAlreadyExistsException.class})
+    public ResponseEntity<Map<String,String>> handleUserStateAndExistsExceptions(RuntimeException ex) {
+        Map<String, String> errorBody = new HashMap<>();
+        errorBody.put("error", ex.getMessage());
+        return new ResponseEntity<>(errorBody, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(TokenExceptions.FailedGenerationTokenException.class)
+    public ResponseEntity<Map<String,String>> handleTokenGenerationException(TokenExceptions.FailedGenerationTokenException ex) {
+        Map<String, String> errorBody = new HashMap<>();
+        errorBody.put("error", "Erro ao gerar token");
+        errorBody.put("cause", ex.getMessage());
+        return new ResponseEntity<>(errorBody, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(TokenExceptions.InvalidTokenException.class)
+    public ResponseEntity<Map<String,String>> handleInvalidTokenException(TokenExceptions.InvalidTokenException ex) {
+        Map<String, String> errorBody = new HashMap<>();
+        errorBody.put("error", "Token inválido");
+        errorBody.put("cause", ex.getMessage());
+        return new ResponseEntity<>(errorBody, HttpStatus.UNAUTHORIZED);
     }
 
 }

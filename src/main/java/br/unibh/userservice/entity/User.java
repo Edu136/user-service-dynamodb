@@ -1,6 +1,7 @@
 package br.unibh.userservice.entity;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -26,6 +27,7 @@ public class User implements UserDetails {
     private UserState status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private List<String> passwordHistory = new ArrayList<>();
 
     @DynamoDbPartitionKey
     public String getId() {

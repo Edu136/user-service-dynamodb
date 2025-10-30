@@ -1,6 +1,7 @@
 package br.unibh.userservice.config;
 
 import br.unibh.userservice.entity.User;
+import br.unibh.userservice.exception.TokenExceptions;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
@@ -33,16 +34,14 @@ public class TokenService {
     }
 
     public String validateToken(String token) {
-        try {
-            Algorithm algorithm = Algorithm.HMAC256(secret);
-            var verifier = JWT.require(algorithm)
-                    .withIssuer("auth-api")
-                    .build();
-            var decodedJWT = verifier.verify(token);
-            return decodedJWT.getSubject();
-        } catch (Exception e) {
-            return "";
-        }
+
+        Algorithm algorithm = Algorithm.HMAC256(secret);
+        var verifier = JWT.require(algorithm)
+                .withIssuer("auth-api")
+                .build();
+        var decodedJWT = verifier.verify(token);
+        return decodedJWT.getSubject();
+
     }
 
     private Instant generateExpirationDate() {

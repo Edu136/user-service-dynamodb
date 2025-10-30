@@ -9,10 +9,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springdoc.core.converters.models.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 
 import java.util.List;
 
@@ -88,8 +86,7 @@ public class UserController {
     @Operation(summary = "Atualiza a senha do usuário", description = "Atualiza a senha do usuário correspondente ao ID fornecido.")
     @PatchMapping("/{id}/password")
     public ResponseEntity<UserResponseDTO> updateUserPassword(@PathVariable String id,@Valid @RequestBody UpdatePasswordDTO request) {
-        String senhaCriptografada = userService.TrataAlteracaoSenhaDTO(request.password());
-        User updatedUser = userService.updatePassword(id, senhaCriptografada);
+        User updatedUser = userService.updatePassword(id,request);
         UserResponseDTO responseDTO = userQueryService.toUserResponseDTO(updatedUser);
         return ResponseEntity.ok(responseDTO);
     }

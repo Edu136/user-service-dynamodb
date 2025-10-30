@@ -5,10 +5,12 @@ import br.unibh.userservice.entity.User;
 import br.unibh.userservice.entity.UserRole;
 import br.unibh.userservice.entity.UserState;
 import br.unibh.userservice.entity.builders.UserBuilder;
+import br.unibh.userservice.exception.UserExceptions;
 import br.unibh.userservice.repository.UserRepository;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
@@ -28,6 +30,7 @@ public class UserService  {
     private final UserRepository userRepository;
     private final UserQueryService userQueryService;
     private final DynamoDbTable<User> userTable;
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public UserService(UserRepository userRepository , UserQueryService userQueryService, DynamoDbTable<User> userTable) {
         this.userTable = userTable;
@@ -63,11 +66,9 @@ public class UserService  {
         return userRepository.save(user);
     }
 
-    //Atulizações parciais dos campos do usuário
-
     public User updateUsername(String id, UpdateUsernameDTO request) {
         if(userJaCadastradoUsername(request.username().trim())) {
-            throw new RuntimeException("Username já cadastrado: " + request.username());
+            throw new UserExceptions.UserAlreadyExistsException("Username já cadastrado: " + request.username());
         }
 
         log.info("Atualizando username do usuário com id: {}" , id);
@@ -75,17 +76,49 @@ public class UserService  {
     }
 
     public User updateEmail(String id, UpdateEmailDTO request) {
-        if(userJaCadastradoEmail(request.email().trim().toLowerCase())) {
-            throw new RuntimeException("Email já cadastrado: " + request.email());
+        if(userJaCadastradoEmail(request.email().trim())) {
+            throw new UserExceptions.UserAlreadyExistsException("Email já cadastrado: " + request.email());
         }
 
         log.info("Atualizando email do usuário com id: {}", id);
         return updateUserField(id, user -> user.setEmail(request.email()));
     }
 
-    public User updatePassword(String id, String senhaCriptografada) {
+    public User updatePassword(String id, UpdatePasswordDTO request) {
         log.info("Atualizando senha do usuário com id: {}", id);
-        return updateUserField(id, user -> user.setPassword(senhaCriptografada));
+
+        if(!validaSenhaAntiga(id, request.oldPassword())){
+            throw new UserExceptions.InvalidOldPasswordException("Senha antiga inválida para o usuário com id: " + id);
+        }
+
+        if(senhasIguais(id, request.newPassword())){
+            throw new UserExceptions.InvalidNewPasswordException("A nova senha não pode ser igual a ultima senha.");
+        }
+
+        User userTrocandoSenha = findUserOrThrow(id);
+
+        List<String> senhasAntigas = userTrocandoSenha.getPasswordHistory();
+
+        for(String hashAntigo : senhasAntigas){
+            if(passwordEncoder.matches(request.newPassword() , hashAntigo)){
+                throw new UserExceptions.InvalidOldPasswordException("A nova senha não pode ser igual a nenhuma das últimas 3 senhas utilizadas.");
+            }
+        }
+
+        if(senhasAntigas.size() >= 3){
+            senhasAntigas.remove(0);
+        }
+
+        senhasAntigas.add(userTrocandoSenha.getPassword());
+
+        String senhaEmHash = trataAlteracaoSenhaDTO(request.newPassword());
+
+        log.info("Historico de todas as senhas antigas do usuário com id: {}: {}", id, senhasAntigas);
+
+        return updateUserField(id, user -> {
+                user.setPassword(senhaEmHash);
+                user.setPasswordHistory(senhasAntigas);
+                });
     }
 
     public User updateRole(String id, UpdateRoleDTO request) {
@@ -98,21 +131,31 @@ public class UserService  {
         return updateUserField(id, user -> user.setStatus(req.userState()));
     }
 
-    public CreateUserRequestDTO TrataDadosRegisterUserDTO(CreateUserRequestDTO request) {
+    public CreateUserRequestDTO trataDadosRegisterUserDTO(CreateUserRequestDTO request) {
         log.info("Tratando dados do usuário para registro...");
-        String encryptedPassword = new BCryptPasswordEncoder().encode(request.password());
+        String encryptedPassword = passwordEncoder.encode(request.password());
         String username = request.username().trim();
         String email = request.email().trim().toLowerCase();
         return new CreateUserRequestDTO(username, email, encryptedPassword);
     }
 
-    public String TrataAlteracaoSenhaDTO(String senha){
-        log.info("Tratando dados da alteração de senha...");
-        return new BCryptPasswordEncoder().encode(senha);
+    private boolean validaSenhaAntiga(String id, String senhaAntiga){
+        User user = findUserOrThrow(id);
+        return passwordEncoder.matches(senhaAntiga, user.getPassword());
     }
 
+    private String trataAlteracaoSenhaDTO(String senha){
+        log.info("Tratando dados da alteração de senha...");
+        return passwordEncoder.encode(senha);
+    }
 
-    public ValidationResultDTO ValidationResultDTO(String email, String username) {
+    private boolean senhasIguais(String id, String senha){
+        User user = findUserOrThrow(id);
+        String senhaAtualHash = user.getPassword();
+        return passwordEncoder.matches(senha, senhaAtualHash);
+    }
+
+    public ValidationResultDTO validationResultDTO(String email, String username) {
         log.info("Validando dados do usuário para registro...");
         if(userRepository.existsByEmail(email) && userRepository.existsByUsername(username)) {
             log.warn("Email e Username já cadastrados: {} , {}", email, username);
@@ -145,7 +188,7 @@ public class UserService  {
 
     private User findUserOrThrow(String id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado com o id: " + id));
+                .orElseThrow(() -> new UserExceptions.UserNotFoundException("Usuário não encontrado com o id: " + id));
     }
 
     public String decodeJwtToken(String token) {
@@ -164,12 +207,12 @@ public class UserService  {
 
         if (user == null) {
             log.warn("Usuário não encontrado com o login: {}", login);
-            throw new RuntimeException("Usuário não encontrado com o login: " + login);
+            throw new UserExceptions.UserLoginNotFoundException("Usuário não encontrado com o login: " + login);
         }
 
         if (!userValidStatus(user)) {
             log.warn("Usuário com login {} está inativo ou bloqueado.", login);
-            throw new RuntimeException("Usuário com login " + login + " está inativo ou bloqueado.");
+            throw new UserExceptions.UserStateException("Usuário com login " + login + " está inativo ou bloqueado.");
         }
 
         return user;
@@ -204,6 +247,4 @@ public class UserService  {
 
         return new PaginatedResult<>(users, nextKey);
     }
-
-
 }
