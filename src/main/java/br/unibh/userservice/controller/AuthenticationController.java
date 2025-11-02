@@ -50,13 +50,7 @@ public class AuthenticationController {
     @PostMapping("/register")
     @Operation(summary = "Registra um novo usuário" , description = "Recebe os dados do novo usuário, valida e cria uma nova conta de usuário.")
     public ResponseEntity<?> createUser(@Valid @RequestBody CreateUserRequestDTO request) {
-        CreateUserRequestDTO dadosRegisterUserDTO =  userService.trataDadosRegisterUserDTO(request);
-        ValidationResultDTO validado = userService.validationResultDTO(dadosRegisterUserDTO.email(), dadosRegisterUserDTO.username());
-        if(!validado.valid()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponseDTO(validado.message()));
-        }
-        User novoUser = userService.createUser(dadosRegisterUserDTO);
-        UserResponseDTO responseDTO = userQueryService.toUserResponseDTO(novoUser);
+        UserResponseDTO responseDTO = userService.createUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
 }

@@ -2,10 +2,9 @@ package br.unibh.userservice.service;
 
 import br.unibh.userservice.dto.*;
 import br.unibh.userservice.entity.User;
-import br.unibh.userservice.entity.UserRole;
 import br.unibh.userservice.entity.UserState;
-import br.unibh.userservice.entity.builders.UserBuilder;
 import br.unibh.userservice.exception.UserExceptions;
+import br.unibh.userservice.mapper.UserMapper;
 import br.unibh.userservice.repository.UserRepository;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import lombok.extern.slf4j.Slf4j;
@@ -30,44 +29,53 @@ public class UserService  {
     private final UserRepository userRepository;
     private final UserQueryService userQueryService;
     private final DynamoDbTable<User> userTable;
-    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
 
-    public UserService(UserRepository userRepository , UserQueryService userQueryService, DynamoDbTable<User> userTable) {
+    public UserService(UserRepository userRepository , UserQueryService userQueryService, DynamoDbTable<User> userTable, UserMapper userMapper) {
+        this.userMapper = userMapper;
         this.userTable = userTable;
         this.userQueryService = userQueryService;
         this.userRepository = userRepository;
+        this.passwordEncoder = new BCryptPasswordEncoder();
     }
 
-    public User createUser(CreateUserRequestDTO request ) {
-        log.info("Criando novo usuário ...");
-        User novoUsuario = new UserBuilder()
-                .id(java.util.UUID.randomUUID().toString())
-                .username(request.username())
-                .email(request.email())
-                .password(request.password())
-                .status(UserState.ACTIVE)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .role(UserRole.USER)
-                .build();
-        return userRepository.save(novoUsuario);
+    public UserResponseDTO createUser(CreateUserRequestDTO request ) {
+        String username = request.username().trim();
+        String email = request.email().trim().toLowerCase();
+
+        ValidationResultDTO validado = this.validationResultDTO(email, username);
+        if (!validado.valid()) {
+            throw new UserExceptions.UserAlreadyExistsException(validado.message());
+        }
+
+        String encryptedPassword = passwordEncoder.encode(request.password());
+
+        User novoUser = userMapper.toEntity(request, encryptedPassword);
+
+        userRepository.save(novoUser);
+
+        return userMapper.toResponseDto(novoUser);
     }
 
     public void deleteUser(String id) {
         log.info("Deletando usuário com id: {}", id);
-        User user = findUserOrThrow(id);
+        User user = userQueryService.findUserOrThrow(id);
         userRepository.deleteById(user.getId());
     }
 
-    private User updateUserField(String id, Consumer<User> updateAction) {
-        User user = findUserOrThrow(id);
+    public UserResponseDTO updateUserField(String id, Consumer<User> updateAction) {
+        User user = userQueryService.findUserOrThrow(id);
         updateAction.accept(user);
         user.setUpdatedAt(LocalDateTime.now());
-        return userRepository.save(user);
+
+        User usuarioAtualizado = userRepository.save(user);
+
+        return userMapper.toResponseDto(usuarioAtualizado);
     }
 
-    public User updateUsername(String id, UpdateUsernameDTO request) {
-        if(userJaCadastradoUsername(request.username().trim())) {
+    public UserResponseDTO updateUsername(String id, UpdateUsernameDTO request) {
+        if(userQueryService.userJaCadastradoUsername(request.username().trim())) {
             throw new UserExceptions.UserAlreadyExistsException("Username já cadastrado: " + request.username());
         }
 
@@ -75,8 +83,8 @@ public class UserService  {
         return updateUserField(id, user -> user.setUsername(request.username()));
     }
 
-    public User updateEmail(String id, UpdateEmailDTO request) {
-        if(userJaCadastradoEmail(request.email().trim())) {
+    public UserResponseDTO updateEmail(String id, UpdateEmailDTO request) {
+        if(userQueryService.userJaCadastradoEmail(request.email().trim())) {
             throw new UserExceptions.UserAlreadyExistsException("Email já cadastrado: " + request.email());
         }
 
@@ -84,7 +92,7 @@ public class UserService  {
         return updateUserField(id, user -> user.setEmail(request.email()));
     }
 
-    public User updatePassword(String id, UpdatePasswordDTO request) {
+    public UserResponseDTO updatePassword(String id, UpdatePasswordDTO request) {
         log.info("Atualizando senha do usuário com id: {}", id);
 
         if(!validaSenhaAntiga(id, request.oldPassword())){
@@ -95,7 +103,7 @@ public class UserService  {
             throw new UserExceptions.InvalidNewPasswordException("A nova senha não pode ser igual a ultima senha.");
         }
 
-        User userTrocandoSenha = findUserOrThrow(id);
+        User userTrocandoSenha = userQueryService.findUserOrThrow(id);
 
         List<String> senhasAntigas = userTrocandoSenha.getPasswordHistory();
 
@@ -121,12 +129,12 @@ public class UserService  {
                 });
     }
 
-    public User updateRole(String id, UpdateRoleDTO request) {
+    public UserResponseDTO updateRole(String id, UpdateRoleDTO request) {
         log.info("Atualizando role do usuário com id: {}", id);
         return updateUserField(id, user -> user.setRole(request.role()));
     }
 
-    public User updateUserStatus(String id, UpdateStatusDTO req) {
+    public UserResponseDTO updateUserStatus(String id, UpdateStatusDTO req) {
         log.info("Atualizando status do usuário com id: {} para {}", id, req.userState());
         return updateUserField(id, user -> user.setStatus(req.userState()));
     }
@@ -140,7 +148,7 @@ public class UserService  {
     }
 
     private boolean validaSenhaAntiga(String id, String senhaAntiga){
-        User user = findUserOrThrow(id);
+        User user = userQueryService.findUserOrThrow(id);
         return passwordEncoder.matches(senhaAntiga, user.getPassword());
     }
 
@@ -150,7 +158,7 @@ public class UserService  {
     }
 
     private boolean senhasIguais(String id, String senha){
-        User user = findUserOrThrow(id);
+        User user = userQueryService.findUserOrThrow(id);
         String senhaAtualHash = user.getPassword();
         return passwordEncoder.matches(senha, senhaAtualHash);
     }
@@ -161,35 +169,15 @@ public class UserService  {
             log.warn("Email e Username já cadastrados: {} , {}", email, username);
             return new ValidationResultDTO(false, "Email e Username já cadastrados.");
         }
-        if(userJaCadastradoEmail(email)) {
+        if(userQueryService.userJaCadastradoEmail(email)) {
             return new ValidationResultDTO(false, "Email já cadastrado.");
         }
-        if(userJaCadastradoUsername(username)) {
+        if(userQueryService.userJaCadastradoUsername(username)) {
             return new ValidationResultDTO(false, "Username já cadastrado.");
         }
         return new ValidationResultDTO(true , "OK.");
     }
 
-    private boolean userJaCadastradoUsername(String username){
-        if(userRepository.existsByUsername(username)) {
-            log.warn("Email já cadastrado: {}", username);
-            return true;
-        }
-        return false;
-    }
-
-    private boolean userJaCadastradoEmail(String email){
-        if(userRepository.existsByEmail(email)) {
-            log.warn("Username já cadastrado: {}", email);
-            return true;
-        }
-        return false;
-    }
-
-    private User findUserOrThrow(String id) {
-        return userRepository.findById(id)
-                .orElseThrow(() -> new UserExceptions.UserNotFoundException("Usuário não encontrado com o id: " + id));
-    }
 
     public String decodeJwtToken(String token) {
         DecodedJWT decodedJWT = decode(token);
@@ -222,7 +210,7 @@ public class UserService  {
         return user.getStatus() == UserState.ACTIVE;
     }
 
-    public PaginatedResult<User> listUsers(String lastKey, int limit) {
+    public PaginatedResult<UserResponseDTO> listUsers(String lastKey, int limit) {
         ScanEnhancedRequest request = ScanEnhancedRequest.builder()
                 .limit(limit)
                 .exclusiveStartKey(lastKey != null
@@ -245,6 +233,15 @@ public class UserService  {
             nextKey = page.lastEvaluatedKey().get("id").s();
         }
 
-        return new PaginatedResult<>(users, nextKey);
+        List<UserResponseDTO> dtos = users.stream()
+                .map(userMapper::toResponseDto)
+                .toList();
+
+        return new PaginatedResult<>(dtos, nextKey);
+    }
+
+    public UserResponseDTO getUserById(String username) {
+        User user = userQueryService.findByUsername(username);
+        return userMapper.toResponseDto(user);
     }
 }

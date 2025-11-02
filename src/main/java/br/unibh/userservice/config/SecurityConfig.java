@@ -29,7 +29,7 @@ public class SecurityConfig{
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/users/{token}").authenticated()
                         .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/users/**").hasRole("ADMIN")
+                        .requestMatchers("/users/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilterChain, UsernamePasswordAuthenticationFilter.class)

@@ -19,12 +19,10 @@ import java.util.List;
 @SecurityRequirement(name = "bearerAuth")
 @Tag(name ="Usuários", description = "Endpoints para gerenciamento de usuários")
 public class UserController {
-    private final UserQueryService userQueryService;
     private final UserService userService;
 
-    public UserController(UserQueryService userQueryService , UserService userService) {
+    public UserController(UserService userService) {
         this.userService = userService;
-        this.userQueryService = userQueryService;
     }
 
     @Operation(summary = "Lista todos os usuários", description = "Retorna uma lista paginada de usuários cadastrados no sistema.")
@@ -32,23 +30,16 @@ public class UserController {
     public ResponseEntity<PaginatedResult<UserResponseDTO>> getAllUsers(@RequestParam(required = false) String lastKey,
                                                        @RequestParam(defaultValue = "10") int limit
                                                   ) {
-        PaginatedResult<User> paginatedResult = userService.listUsers(lastKey, limit);
+        PaginatedResult<UserResponseDTO> paginatedResult = userService.listUsers(lastKey, limit);
 
-        List<UserResponseDTO> dtos = paginatedResult.getItems().stream()
-                .map(userQueryService::toUserResponseDTO)
-                .toList();
-
-        PaginatedResult<UserResponseDTO> response = new PaginatedResult<>(dtos, paginatedResult.getNextKey());
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(paginatedResult);
     }
 
     @Operation(summary = "Obtém detalhes do usuário por token", description = "Retorna os detalhes do usuário correspondente ao token JWT fornecido.")
     @GetMapping("/{token}")
     public ResponseEntity<UserResponseDTO> getUserById(@PathVariable String token) {
-        String idUser = userService.decodeJwtToken(token);
-        User user = userQueryService.findByUsername(idUser);
-        UserResponseDTO responseDTO = userQueryService.toUserResponseDTO(user);
+        String username = userService.decodeJwtToken(token);
+        UserResponseDTO responseDTO = userService.getUserById(username);
         return ResponseEntity.ok(responseDTO);
     }
 
@@ -62,40 +53,35 @@ public class UserController {
     @Operation(summary = "Atualiza o status do usuário", description = "Atualiza o status (ACTIVE/INACTIVE/BLOCKED) do usuário correspondente ao ID fornecido.")
     @PatchMapping("/{id}/state")
     public ResponseEntity<UserResponseDTO> updateUserStatus(@PathVariable String id, @RequestBody @Valid UpdateStatusDTO req) {
-        User updateUser = userService.updateUserStatus(id, req);
-        UserResponseDTO responseDTO = userQueryService.toUserResponseDTO(updateUser);
+        UserResponseDTO responseDTO = userService.updateUserStatus(id, req);
         return ResponseEntity.ok(responseDTO);
     }
 
     @Operation(summary = "Atualiza o nome de usuário", description = "Atualiza o nome de usuário do usuário correspondente ao ID fornecido.")
     @PatchMapping("/{id}/username")
     public ResponseEntity<UserResponseDTO> updateUsername(@PathVariable String id, @Valid @RequestBody UpdateUsernameDTO request) {
-        User updatedUser = userService.updateUsername(id, request);
-        UserResponseDTO responseDTO = userQueryService.toUserResponseDTO(updatedUser);
+        UserResponseDTO responseDTO = userService.updateUsername(id, request);
         return ResponseEntity.ok(responseDTO);
     }
 
     @Operation(summary = "Atualiza o email do usuário", description = "Atualiza o email do usuário correspondente ao ID fornecido.")
     @PatchMapping("/{id}/email")
     public ResponseEntity<UserResponseDTO> updateUserEmail(@PathVariable String id,@Valid @RequestBody UpdateEmailDTO request) {
-        User updatedUser = userService.updateEmail(id, request);
-        UserResponseDTO responseDTO = userQueryService.toUserResponseDTO(updatedUser);
+        UserResponseDTO responseDTO = userService.updateEmail(id, request);
         return ResponseEntity.ok(responseDTO);
     }
 
     @Operation(summary = "Atualiza a senha do usuário", description = "Atualiza a senha do usuário correspondente ao ID fornecido.")
     @PatchMapping("/{id}/password")
     public ResponseEntity<UserResponseDTO> updateUserPassword(@PathVariable String id,@Valid @RequestBody UpdatePasswordDTO request) {
-        User updatedUser = userService.updatePassword(id,request);
-        UserResponseDTO responseDTO = userQueryService.toUserResponseDTO(updatedUser);
+        UserResponseDTO responseDTO = userService.updatePassword(id,request);
         return ResponseEntity.ok(responseDTO);
     }
 
     @Operation(summary = "Atualiza o papel do usuário", description = "Atualiza o papel (role) do usuário correspondente ao ID fornecido.")
     @PatchMapping("/{id}/role")
     public ResponseEntity<UserResponseDTO> updateUserRole(@PathVariable String id,@Valid @RequestBody UpdateRoleDTO request) {
-        User updatedUser = userService.updateRole(id, request);
-        UserResponseDTO responseDTO = userQueryService.toUserResponseDTO(updatedUser);
+        UserResponseDTO responseDTO = userService.updateRole(id, request);
         return ResponseEntity.ok(responseDTO);
     }
 }

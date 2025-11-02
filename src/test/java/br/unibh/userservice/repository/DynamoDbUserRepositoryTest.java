@@ -27,7 +27,7 @@ import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput;
 import software.amazon.awssdk.services.dynamodb.model.ResourceInUseException;
 
 @SpringBootTest
-@ActiveProfiles("prod") // Ativa o perfil 'test', lendo application-test.properties
+@ActiveProfiles("prod")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class DynamoDbUserRepositoryTest {
 
