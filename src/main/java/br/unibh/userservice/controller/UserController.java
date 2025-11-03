@@ -52,36 +52,36 @@ public class UserController {
 
     @Operation(summary = "Atualiza o status do usuário", description = "Atualiza o status (ACTIVE/INACTIVE/BLOCKED) do usuário correspondente ao ID fornecido.")
     @PatchMapping("/{id}/state")
-    public ResponseEntity<UserResponseDTO> updateUserStatus(@PathVariable String id, @RequestBody @Valid UpdateStatusDTO req) {
-        UserResponseDTO responseDTO = userService.updateUserStatus(id, req);
+    public ResponseEntity<UserUpdateResponseDTO> updateUserStatus(@PathVariable String id, @RequestBody @Valid UpdateStatusDTO req) {
+        UserUpdateResponseDTO responseDTO = userService.updateUserStatus(id, req);
         return ResponseEntity.ok(responseDTO);
     }
 
     @Operation(summary = "Atualiza o nome de usuário", description = "Atualiza o nome de usuário do usuário correspondente ao ID fornecido.")
     @PatchMapping("/{id}/username")
-    public ResponseEntity<UserResponseDTO> updateUsername(@PathVariable String id, @Valid @RequestBody UpdateUsernameDTO request) {
-        UserResponseDTO responseDTO = userService.updateUsername(id, request);
+    public ResponseEntity<UserUpdateResponseDTO> updateUsername(@PathVariable String id, @Valid @RequestBody UpdateUsernameDTO request) {
+        UserUpdateResponseDTO responseDTO = userService.updateUsername(id, request);
         return ResponseEntity.ok(responseDTO);
     }
 
     @Operation(summary = "Atualiza o email do usuário", description = "Atualiza o email do usuário correspondente ao ID fornecido.")
     @PatchMapping("/{id}/email")
-    public ResponseEntity<UserResponseDTO> updateUserEmail(@PathVariable String id,@Valid @RequestBody UpdateEmailDTO request) {
-        UserResponseDTO responseDTO = userService.updateEmail(id, request);
+    public ResponseEntity<UserUpdateResponseDTO> updateUserEmail(@PathVariable String id,@Valid @RequestBody UpdateEmailDTO request) {
+        UserUpdateResponseDTO responseDTO = userService.updateEmail(id, request);
         return ResponseEntity.ok(responseDTO);
     }
 
     @Operation(summary = "Atualiza a senha do usuário", description = "Atualiza a senha do usuário correspondente ao ID fornecido.")
     @PatchMapping("/{id}/password")
-    public ResponseEntity<UserResponseDTO> updateUserPassword(@PathVariable String id,@Valid @RequestBody UpdatePasswordDTO request) {
-        UserResponseDTO responseDTO = userService.updatePassword(id,request);
+    public ResponseEntity<UserUpdateResponseDTO> updateUserPassword(@PathVariable String id,@Valid @RequestBody UpdatePasswordDTO request) {
+        UserUpdateResponseDTO responseDTO = userService.updatePassword(id,request);
         return ResponseEntity.ok(responseDTO);
     }
 
     @Operation(summary = "Atualiza o papel do usuário", description = "Atualiza o papel (role) do usuário correspondente ao ID fornecido.")
     @PatchMapping("/{id}/role")
-    public ResponseEntity<UserResponseDTO> updateUserRole(@PathVariable String id,@Valid @RequestBody UpdateRoleDTO request) {
-        UserResponseDTO responseDTO = userService.updateRole(id, request);
+    public ResponseEntity<UserUpdateResponseDTO> updateUserRole(@PathVariable String id,@Valid @RequestBody UpdateRoleDTO request) {
+        UserUpdateResponseDTO responseDTO = userService.updateRole(id, request);
         return ResponseEntity.ok(responseDTO);
     }
 }

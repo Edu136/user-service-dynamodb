@@ -24,13 +24,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthenticationController {
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
-    private final UserQueryService userQueryService;
     private final TokenService tokenService;
 
-    public AuthenticationController(AuthenticationManager authenticationManager, UserService userService, UserQueryService userQueryService, TokenService tokenService) {
+    public AuthenticationController(AuthenticationManager authenticationManager, UserService userService, TokenService tokenService) {
         this.tokenService = tokenService;
         this.userService = userService;
-        this.userQueryService = userQueryService;
         this.authenticationManager = authenticationManager;
     }
 

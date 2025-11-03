@@ -2,6 +2,7 @@ package br.unibh.userservice.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -27,12 +28,21 @@ public class SecurityConfig{
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/users/{token}").authenticated()
                         .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/users/**").permitAll()
+
+                        .requestMatchers(HttpMethod.GET, "/users").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/users/*/role").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/users/*/status").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/users/*").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/users/*/username").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/users/*/password").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/users/*/email").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/users/*").authenticated()
+
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(securityFilterChain, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(this.securityFilterChain, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 

@@ -1,13 +1,17 @@
 package br.unibh.userservice.service;
 
+import br.unibh.userservice.config.TokenService;
 import br.unibh.userservice.dto.*;
 import br.unibh.userservice.entity.User;
+import br.unibh.userservice.entity.UserRole;
 import br.unibh.userservice.entity.UserState;
 import br.unibh.userservice.exception.UserExceptions;
 import br.unibh.userservice.mapper.UserMapper;
 import br.unibh.userservice.repository.UserRepository;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -31,17 +35,19 @@ public class UserService  {
     private final DynamoDbTable<User> userTable;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
+    private final TokenService tokenService;
 
-    public UserService(UserRepository userRepository , UserQueryService userQueryService, DynamoDbTable<User> userTable, UserMapper userMapper) {
+    public UserService(UserRepository userRepository , UserQueryService userQueryService, DynamoDbTable<User> userTable, UserMapper userMapper, TokenService tokenService) {
         this.userMapper = userMapper;
         this.userTable = userTable;
         this.userQueryService = userQueryService;
         this.userRepository = userRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
+        this.tokenService = tokenService;
     }
 
     public UserResponseDTO createUser(CreateUserRequestDTO request ) {
-        String username = request.username().trim();
+        String username = request.username().trim().toLowerCase();
         String email = request.email().trim().toLowerCase();
 
         ValidationResultDTO validado = this.validationResultDTO(email, username);
@@ -59,40 +65,48 @@ public class UserService  {
     }
 
     public void deleteUser(String id) {
+        checkAdminOrSelf(id);
         log.info("Deletando usuário com id: {}", id);
         User user = userQueryService.findUserOrThrow(id);
         userRepository.deleteById(user.getId());
     }
 
-    public UserResponseDTO updateUserField(String id, Consumer<User> updateAction) {
+    public UserUpdateResponseDTO updateUserField(String id, Consumer<User> updateAction) {
         User user = userQueryService.findUserOrThrow(id);
         updateAction.accept(user);
         user.setUpdatedAt(LocalDateTime.now());
 
         User usuarioAtualizado = userRepository.save(user);
 
-        return userMapper.toResponseDto(usuarioAtualizado);
+        var token = tokenService.generateToken(user);
+
+        return userMapper.toUpdateResponseDto(usuarioAtualizado,token);
     }
 
-    public UserResponseDTO updateUsername(String id, UpdateUsernameDTO request) {
-        if(userQueryService.userJaCadastradoUsername(request.username().trim())) {
+    public UserUpdateResponseDTO updateUsername(String id, UpdateUsernameDTO request) {
+        checkAdminOrSelf(id);
+        String username = request.username().trim().toLowerCase();
+        if(userQueryService.userJaCadastradoUsername(username)) {
             throw new UserExceptions.UserAlreadyExistsException("Username já cadastrado: " + request.username());
         }
 
         log.info("Atualizando username do usuário com id: {}" , id);
-        return updateUserField(id, user -> user.setUsername(request.username()));
+        return updateUserField(id, user -> user.setUsername(username));
     }
 
-    public UserResponseDTO updateEmail(String id, UpdateEmailDTO request) {
-        if(userQueryService.userJaCadastradoEmail(request.email().trim())) {
+    public UserUpdateResponseDTO updateEmail(String id, UpdateEmailDTO request) {
+        checkAdminOrSelf(id);
+        String email = request.email().trim().toLowerCase();
+        if(userQueryService.userJaCadastradoEmail(email)) {
             throw new UserExceptions.UserAlreadyExistsException("Email já cadastrado: " + request.email());
         }
 
         log.info("Atualizando email do usuário com id: {}", id);
-        return updateUserField(id, user -> user.setEmail(request.email()));
+        return updateUserField(id, user -> user.setEmail(email));
     }
 
-    public UserResponseDTO updatePassword(String id, UpdatePasswordDTO request) {
+    public UserUpdateResponseDTO updatePassword(String id, UpdatePasswordDTO request) {
+        checkAdminOrSelf(id);
         log.info("Atualizando senha do usuário com id: {}", id);
 
         if(!validaSenhaAntiga(id, request.oldPassword())){
@@ -129,14 +143,28 @@ public class UserService  {
                 });
     }
 
-    public UserResponseDTO updateRole(String id, UpdateRoleDTO request) {
+    public UserUpdateResponseDTO updateRole(String id, UpdateRoleDTO request) {
         log.info("Atualizando role do usuário com id: {}", id);
         return updateUserField(id, user -> user.setRole(request.role()));
     }
 
-    public UserResponseDTO updateUserStatus(String id, UpdateStatusDTO req) {
+    public UserUpdateResponseDTO updateUserStatus(String id, UpdateStatusDTO req) {
         log.info("Atualizando status do usuário com id: {} para {}", id, req.userState());
         return updateUserField(id, user -> user.setStatus(req.userState()));
+    }
+
+    private void checkAdminOrSelf(String targetUserId) {
+        User usuarioLogado = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        if (usuarioLogado.getRole() == UserRole.ADMIN) {
+            return;
+        }
+
+        if (usuarioLogado.getId().equals(targetUserId)) {
+            return;
+        }
+
+        throw new AccessDeniedException("Acesso negado: você só pode alterar seus próprios dados.");
     }
 
     public CreateUserRequestDTO trataDadosRegisterUserDTO(CreateUserRequestDTO request) {
