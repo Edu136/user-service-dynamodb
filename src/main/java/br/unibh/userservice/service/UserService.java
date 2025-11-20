@@ -9,12 +9,18 @@ import br.unibh.userservice.exception.UserExceptions;
 import br.unibh.userservice.mapper.UserMapper;
 import br.unibh.userservice.repository.UserRepository;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import lombok.extern.flogger.Flogger;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -36,17 +42,20 @@ public class UserService  {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final TokenService tokenService;
+    private final AuthenticationManager authenticationManager;
 
-    public UserService(UserRepository userRepository , UserQueryService userQueryService, DynamoDbTable<User> userTable, UserMapper userMapper, TokenService tokenService) {
+    public UserService(UserRepository userRepository , UserQueryService userQueryService, DynamoDbTable<User> userTable, UserMapper userMapper, TokenService tokenService, AuthenticationManager authenticationManager) {
         this.userMapper = userMapper;
         this.userTable = userTable;
         this.userQueryService = userQueryService;
         this.userRepository = userRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
         this.tokenService = tokenService;
+        this.authenticationManager = authenticationManager;
     }
 
     public UserResponseDTO createUser(CreateUserRequestDTO request ) {
+        log.info("Criando novo usuário com username: {} e email: {}", request.username(), request.email());
         String username = request.username().trim().toLowerCase();
         String email = request.email().trim().toLowerCase();
 
@@ -210,6 +219,25 @@ public class UserService  {
     public String decodeJwtToken(String token) {
         DecodedJWT decodedJWT = decode(token);
         return decodedJWT.getSubject();
+    }
+
+    public LoginResponseDTO autenticar(AutheticationDTO request) {
+        try {
+            var usernamePassword = new UsernamePasswordAuthenticationToken(
+                    request.login(),
+                    request.password()
+            );
+
+            var auth = authenticationManager.authenticate(usernamePassword);
+            UserDetails userDetails = (UserDetails) auth.getPrincipal();
+            User user = loginComUsernameOuEmail(userDetails.getUsername());
+            String token = tokenService.generateToken(user);
+
+            return new LoginResponseDTO(token, user.getId(), user.getRole() , user.getUsername() , user.getEmail());
+
+        } catch (UserExceptions.InvalidOldPasswordException e) {
+            throw new UserExceptions.InvalidNewPasswordException("Credenciais inválidas");
+        }
     }
 
     public User loginComUsernameOuEmail(String login) {

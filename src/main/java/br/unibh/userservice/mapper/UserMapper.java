@@ -1,7 +1,6 @@
 package br.unibh.userservice.mapper;
 
 import br.unibh.userservice.dto.CreateUserRequestDTO;
-import br.unibh.userservice.dto.UpdateUsernameDTO;
 import br.unibh.userservice.dto.UserResponseDTO;
 import br.unibh.userservice.dto.UserUpdateResponseDTO;
 import br.unibh.userservice.entity.User;
@@ -10,7 +9,6 @@ import br.unibh.userservice.entity.UserState;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

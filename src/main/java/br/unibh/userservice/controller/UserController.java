@@ -17,6 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/users")
 @SecurityRequirement(name = "bearerAuth")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 @Tag(name ="Usuários", description = "Endpoints para gerenciamento de usuários")
 public class UserController {
     private final UserService userService;
@@ -35,13 +36,13 @@ public class UserController {
         return ResponseEntity.ok(paginatedResult);
     }
 
-    @Operation(summary = "Obtém detalhes do usuário por token", description = "Retorna os detalhes do usuário correspondente ao token JWT fornecido.")
-    @GetMapping("/{token}")
-    public ResponseEntity<UserResponseDTO> getUserById(@PathVariable String token) {
-        String username = userService.decodeJwtToken(token);
-        UserResponseDTO responseDTO = userService.getUserById(username);
-        return ResponseEntity.ok(responseDTO);
-    }
+//    @Operation(summary = "Obtém detalhes do usuário por token", description = "Retorna os detalhes do usuário correspondente ao token JWT fornecido.")
+//    @GetMapping("/{token}")
+//    public ResponseEntity<UserResponseDTO> getUserById(@PathVariable String token) {
+//        String username = userService.decodeJwtToken(token);
+//        UserResponseDTO responseDTO = userService.getUserById(username);
+//        return ResponseEntity.ok(responseDTO);
+//    }
 
     @Operation(summary = "Exclui um usuário por ID", description = "Exclui o usuário correspondente ao ID fornecido.")
     @DeleteMapping("/{id}")

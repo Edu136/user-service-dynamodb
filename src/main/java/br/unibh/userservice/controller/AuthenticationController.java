@@ -13,35 +13,26 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
+@CrossOrigin(origins = "*")
 @Tag(name ="Authentication", description = "Endpoints para usuário autenticar e registar")
 public class AuthenticationController {
-    private final AuthenticationManager authenticationManager;
     private final UserService userService;
-    private final TokenService tokenService;
 
-    public AuthenticationController(AuthenticationManager authenticationManager, UserService userService, TokenService tokenService) {
-        this.tokenService = tokenService;
+    public AuthenticationController( UserService userService) {
         this.userService = userService;
-        this.authenticationManager = authenticationManager;
     }
 
 
     @PostMapping("/login")
-    @Operation(summary = "Autentica um usuário" , description = "Recebe as credenciais do usuário e retorna um token JWT se a autenticação for bem-sucedida.")
+    @Operation(summary = "Autentica um usuário",
+            description = "Recebe as credenciais do usuário e retorna um token JWT se a autenticação for bem-sucedida.")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid AutheticationDTO request) {
-        var usernamePassword = new UsernamePasswordAuthenticationToken(request.login(), request.password());
-        var auth = authenticationManager.authenticate(usernamePassword);
-        UserDetails userDetails = (UserDetails) auth.getPrincipal();
-        User user = userService.loginComUsernameOuEmail(userDetails.getUsername());
-        var token = tokenService.generateToken(user);
-        return ResponseEntity.ok(new LoginResponseDTO(token));
+        LoginResponseDTO response = userService.autenticar(request);
+        return ResponseEntity.ok(response);
     }
 
 

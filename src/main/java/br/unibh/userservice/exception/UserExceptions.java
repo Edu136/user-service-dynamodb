@@ -1,5 +1,8 @@
 package br.unibh.userservice.exception;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
 public class UserExceptions {
 
     public static class InvalidOldPasswordException extends RuntimeException {
@@ -34,6 +37,13 @@ public class UserExceptions {
 
     public static class UserAlreadyExistsException extends RuntimeException {
         public UserAlreadyExistsException(String message) {
+            super(message);
+        }
+    }
+
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public static class PasswordOrLoginInvalidException extends RuntimeException {
+        public PasswordOrLoginInvalidException(String message) {
             super(message);
         }
     }

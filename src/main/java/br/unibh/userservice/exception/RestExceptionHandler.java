@@ -104,7 +104,8 @@ public class RestExceptionHandler {
     }
 
     @ExceptionHandler({UserExceptions.UserNotFoundException.class,
-                        UserExceptions.UserLoginNotFoundException.class})
+                        UserExceptions.UserLoginNotFoundException.class,
+                        UserExceptions.PasswordOrLoginInvalidException.class})
     public ResponseEntity<Map<String,String>> handleUserNotFound(RuntimeException ex) {
         Map<String, String> errorBody = new HashMap<>();
         errorBody.put("error", ex.getMessage());
