@@ -235,8 +235,8 @@ public class UserService  {
 
             return new LoginResponseDTO(token, user.getId(), user.getRole() , user.getUsername() , user.getEmail());
 
-        } catch (UserExceptions.InvalidOldPasswordException e) {
-            throw new UserExceptions.InvalidNewPasswordException("Credenciais inválidas");
+        } catch (AuthenticationException e) {
+            throw new UserExceptions.PasswordOrLoginInvalidException("Credenciais inválidas");
         }
     }
 

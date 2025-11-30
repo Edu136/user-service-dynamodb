@@ -33,13 +33,11 @@ public class SecurityConfig{
                         .requestMatchers(HttpMethod.GET, "/users").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/users/*/role").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/users/*/status").hasRole("ADMIN")
-
-                        .requestMatchers(HttpMethod.GET, "/users/*").authenticated()
-                        .requestMatchers(HttpMethod.PATCH, "/users/*/username").authenticated()
-                        .requestMatchers(HttpMethod.PATCH, "/users/*/password").authenticated()
-                        .requestMatchers(HttpMethod.PATCH, "/users/*/email").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/users/*").authenticated()
-
+//                        .requestMatchers(HttpMethod.GET, "/users/*").authenticated()
+//                        .requestMatchers(HttpMethod.PATCH, "/users/*/username").authenticated()
+//                        .requestMatchers(HttpMethod.PATCH, "/users/*/password").authenticated()
+//                        .requestMatchers(HttpMethod.PATCH, "/users/*/email").authenticated()
+//                        .requestMatchers(HttpMethod.DELETE, "/users/*").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(this.securityFilterChain, UsernamePasswordAuthenticationFilter.class)

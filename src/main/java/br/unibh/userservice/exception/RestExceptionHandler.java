@@ -104,12 +104,18 @@ public class RestExceptionHandler {
     }
 
     @ExceptionHandler({UserExceptions.UserNotFoundException.class,
-                        UserExceptions.UserLoginNotFoundException.class,
-                        UserExceptions.PasswordOrLoginInvalidException.class})
+                        UserExceptions.UserLoginNotFoundException.class})
     public ResponseEntity<Map<String,String>> handleUserNotFound(RuntimeException ex) {
         Map<String, String> errorBody = new HashMap<>();
         errorBody.put("error", ex.getMessage());
         return new ResponseEntity<>(errorBody, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(UserExceptions.PasswordOrLoginInvalidException.class)
+    public ResponseEntity<Map<String,String>> handlePasswordOrLoginInvalid(UserExceptions.PasswordOrLoginInvalidException ex) {
+        Map<String, String> errorBody = new HashMap<>();
+        errorBody.put("error", ex.getMessage());
+        return new ResponseEntity<>(errorBody, HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler({UserExceptions.UserStateException.class,
